@@ -1,48 +1,44 @@
 const express = require('express');
-const fetch = require('node-fetch');
-
+const fetch = require('node-fetch'); // หรือ axios
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1375138473677426830/A1S9Xos1tozwo-TPTBIv7mO36MFNt_Ol1Vt_dlXjAsLJL16wIu6MZY3E8Yn1niJrktMK';
-
-// middleware เพื่อรับ JSON body
 app.use(express.json());
 
-async function sendDiscord(content) {
-  if (!DISCORD_WEBHOOK_URL) {
-    console.warn('Discord webhook URL not configured.');
-    return;
-  }
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1375138473677426830/A1S9Xos1tozwo-TPTBIv7mO36MFNt_Ol1Vt_dlXjAsLJL16wIu6MZY3E8Yn1niJrktMK';
 
-  try {
-    const res = await fetch(DISCORD_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
-    if (!res.ok) {
-      console.error('Failed to send Discord message:', res.statusText);
+app.post('/upgrade', async (req, res) => {
+  const { username, itemName, result } = req.body;
+
+  // result = 'success', 'fail', 'broken'
+
+  // กรองเฉพาะกรณีที่ต้องแจ้งเตือน
+  if (['success', 'fail', 'broken'].includes(result)) {
+    let message = '';
+
+    if (result === 'success') {
+      message = `✅ ผู้เล่น ${username} อัพเกรดไอเท็ม ${itemName} สำเร็จ! 🎉`;
+    } else if (result === 'fail') {
+      message = `❌ ผู้เล่น ${username} อัพเกรดไอเท็ม ${itemName} ล้มเหลว! 😞`;
+    } else if (result === 'broken') {
+      message = `💥 ผู้เล่น ${username} ไอเท็ม ${itemName} แตกหายไปเลย! 😱`;
     }
-  } catch (error) {
-    console.error('Error sending Discord message:', error);
+
+    try {
+      await fetch(DISCORD_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message }),
+      });
+      return res.json({ status: 'ok', message: 'แจ้งเตือนไปที่ Discord แล้ว' });
+    } catch (error) {
+      console.error('ส่ง webhook ไม่สำเร็จ:', error);
+      return res.status(500).json({ status: 'error', message: 'ส่งแจ้งเตือนไป Discord ไม่สำเร็จ' });
+    }
+  } else {
+    // ไม่ต้องแจ้งเตือนถ้า result ไม่ใช่ case ที่กำหนด
+    return res.json({ status: 'ok', message: 'ไม่ต้องแจ้งเตือน' });
   }
-}
-
-// route ทดสอบส่งข้อความไป Discord
-app.post('/send-discord', async (req, res) => {
-  const { message } = req.body;
-  if (!message) return res.status(400).json({ error: 'Missing message in request body' });
-
-  await sendDiscord(message);
-  res.json({ status: 'Message sent (or attempt made)' });
 });
 
-// route พื้นฐานทดสอบเว็บเซิร์ฟเวอร์
-app.get('/', (req, res) => {
-  res.send('Discord webhook test service is running');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
 });
