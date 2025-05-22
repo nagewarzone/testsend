@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const DISCORD_WEBHOOK_URL = 'ใส่เว็บฮุคที่ใช้งานจริงที่นี่';
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1375138473677426830/A1S9Xos1tozwo-TPTBIv7mO36MFNt_Ol1Vt_dlXjAsLJL16wIu6MZY3E8Yn1niJrktMK';
 
 async function sendDiscordMessage(content) {
   try {
